@@ -391,6 +391,12 @@ class GraphNode {
     getTrajectoryDataIndices(): {node: number[], edge: number[]} {
         const connectedEdgesMap = zrUtil.createHashMap<boolean, number>();
         const connectedNodesMap = zrUtil.createHashMap<boolean, number>();
+        const data = this.hostGraph.data;
+        const getColor = (index: number) => {
+            const rawData: any = data.getRawDataItem(index);
+            return rawData.itemStyle.color;
+        };
+        const currentNodeColor = getColor(this.dataIndex);
 
         for (let i = 0; i < this.edges.length; i++) {
             const adjacentEdge = this.edges[i];
@@ -398,7 +404,11 @@ class GraphNode {
                 continue;
             }
 
-            connectedEdgesMap.set(adjacentEdge.dataIndex, true);
+            const node1Color = getColor(adjacentEdge.node1.dataIndex);
+            const node2Color = getColor(adjacentEdge.node2.dataIndex);
+            if (node1Color === currentNodeColor || node2Color === currentNodeColor) {
+                connectedEdgesMap.set(adjacentEdge.dataIndex, true);
+            }
 
             const sourceNodesQueue = [adjacentEdge.node1];
             const targetNodesQueue = [adjacentEdge.node2];
@@ -407,10 +417,16 @@ class GraphNode {
             while (nodeIteratorIndex < sourceNodesQueue.length) {
                 const sourceNode = sourceNodesQueue[nodeIteratorIndex];
                 nodeIteratorIndex++;
-                connectedNodesMap.set(sourceNode.dataIndex, true);
+                if (getColor(sourceNode.dataIndex) === currentNodeColor) {
+                    connectedNodesMap.set(sourceNode.dataIndex, true);
+                }
 
                 for (let j = 0; j < sourceNode.inEdges.length; j++) {
-                    connectedEdgesMap.set(sourceNode.inEdges[j].dataIndex, true);
+                    const node1Color = getColor(sourceNode.inEdges[j].node1.dataIndex);
+                    const node2Color = getColor(sourceNode.inEdges[j].node2.dataIndex);
+                    if (node1Color === currentNodeColor || node2Color === currentNodeColor) {
+                        connectedEdgesMap.set(sourceNode.inEdges[j].dataIndex, true);
+                    }
                     sourceNodesQueue.push(sourceNode.inEdges[j].node1);
                 }
             }
@@ -419,9 +435,15 @@ class GraphNode {
             while (nodeIteratorIndex < targetNodesQueue.length) {
                 const targetNode = targetNodesQueue[nodeIteratorIndex];
                 nodeIteratorIndex++;
-                connectedNodesMap.set(targetNode.dataIndex, true);
+                if (getColor(targetNode.dataIndex) === currentNodeColor) {
+                    connectedNodesMap.set(targetNode.dataIndex, true);
+                }
                 for (let j = 0; j < targetNode.outEdges.length; j++) {
-                    connectedEdgesMap.set(targetNode.outEdges[j].dataIndex, true);
+                    const node1Color = getColor(targetNode.outEdges[j].node1.dataIndex);
+                    const node2Color = getColor(targetNode.outEdges[j].node2.dataIndex);
+                    if (node1Color === currentNodeColor || node2Color === currentNodeColor) {
+                        connectedEdgesMap.set(targetNode.outEdges[j].dataIndex, true);
+                    }
                     targetNodesQueue.push(targetNode.outEdges[j].node2);
                 }
             }
@@ -478,8 +500,19 @@ class GraphEdge {
     getTrajectoryDataIndices(): {node: number[], edge: number[]} {
         const connectedEdgesMap = zrUtil.createHashMap<boolean, number>();
         const connectedNodesMap = zrUtil.createHashMap<boolean, number>();
+        const data = this.hostGraph.data;
+        const getColor = (index: number) => {
+            const rawData: any = data.getRawDataItem(index);
+            return rawData.itemStyle.color;
+        };
+        const currentLinkColor = getColor(this.node1.dataIndex);
 
-        connectedEdgesMap.set(this.dataIndex, true);
+
+        const node1Color = getColor(this.node1.dataIndex);
+        const node2Color = getColor(this.node2.dataIndex);
+        if (node1Color === currentLinkColor || node2Color === currentLinkColor) {
+            connectedEdgesMap.set(this.dataIndex, true);
+        }
 
         const sourceNodes = [this.node1];
         const targetNodes = [this.node2];
@@ -489,10 +522,16 @@ class GraphEdge {
             const sourceNode = sourceNodes[nodeIteratorIndex];
             nodeIteratorIndex++;
 
-            connectedNodesMap.set(sourceNode.dataIndex, true);
+            if (getColor(sourceNode.dataIndex) === currentLinkColor) {
+                connectedNodesMap.set(sourceNode.dataIndex, true);
+            }
 
             for (let j = 0; j < sourceNode.inEdges.length; j++) {
-                connectedEdgesMap.set(sourceNode.inEdges[j].dataIndex, true);
+                const node1Color = getColor(sourceNode.inEdges[j].node1.dataIndex);
+                const node2Color = getColor(sourceNode.inEdges[j].node2.dataIndex);
+                if (node1Color === currentLinkColor || node2Color === currentLinkColor) {
+                    connectedEdgesMap.set(sourceNode.inEdges[j].dataIndex, true);
+                }
                 sourceNodes.push(sourceNode.inEdges[j].node1);
             }
         }
@@ -502,10 +541,16 @@ class GraphEdge {
             const targetNode = targetNodes[nodeIteratorIndex];
             nodeIteratorIndex++;
 
-            connectedNodesMap.set(targetNode.dataIndex, true);
+            if (getColor(targetNode.dataIndex) === currentLinkColor) {
+                connectedNodesMap.set(targetNode.dataIndex, true);
+            }
 
             for (let j = 0; j < targetNode.outEdges.length; j++) {
-                connectedEdgesMap.set(targetNode.outEdges[j].dataIndex, true);
+                const node1Color = getColor(targetNode.outEdges[j].node1.dataIndex);
+                const node2Color = getColor(targetNode.outEdges[j].node2.dataIndex);
+                if (node1Color === currentLinkColor || node2Color === currentLinkColor) {
+                    connectedEdgesMap.set(targetNode.outEdges[j].dataIndex, true);
+                }
                 targetNodes.push(targetNode.outEdges[j].node2);
             }
         }
