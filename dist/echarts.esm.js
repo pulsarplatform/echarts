@@ -12729,6 +12729,14 @@ function blurSeries(targetSeriesIndex, focus, blurScope, api) {
     )) {
       var view = api.getViewOfSeriesModel(seriesModel);
       view.group.traverse(function (child) {
+        // For the elements that have been triggered by other components,
+        // and are still required to be highlighted,
+        // because the current is directly forced to blur the element,
+        // it will cause the focus self to be unable to highlight, so skip the blur of this element.
+        if (child.__highByOuter && sameSeries && focus === 'self') {
+          return;
+        }
+
         singleEnterBlur(child);
       });
 
@@ -15358,13 +15366,14 @@ function getLabelText(opt, stateModels, interpolatedValue) {
   var labelFetcher = opt.labelFetcher;
   var labelDataIndex = opt.labelDataIndex;
   var labelDimIndex = opt.labelDimIndex;
+  var labelValue = opt.labelValue;
   var normalModel = stateModels.normal;
   var baseText;
 
   if (labelFetcher) {
-    baseText = labelFetcher.getFormattedLabel(labelDataIndex, 'normal', null, labelDimIndex, normalModel && normalModel.get('formatter'), interpolatedValue != null ? {
-      interpolatedValue: interpolatedValue
-    } : null);
+    baseText = labelFetcher.getFormattedLabel(labelDataIndex, 'normal', null, labelDimIndex, normalModel && normalModel.get('formatter'), {
+      interpolatedValue: retrieve2(interpolatedValue, labelValue)
+    });
   }
 
   if (baseText == null) {
@@ -15645,7 +15654,7 @@ function getRichItemNames(textStyleModel) {
 }
 
 var TEXT_PROPS_WITH_GLOBAL = ['fontStyle', 'fontWeight', 'fontSize', 'fontFamily', 'textShadowColor', 'textShadowBlur', 'textShadowOffsetX', 'textShadowOffsetY'];
-var TEXT_PROPS_SELF = ['align', 'lineHeight', 'width', 'height', 'tag', 'verticalAlign'];
+var TEXT_PROPS_SELF = ['align', 'lineHeight', 'width', 'height', 'tag', 'verticalAlign', 'ellipsis'];
 var TEXT_PROPS_BOX = ['padding', 'borderWidth', 'borderRadius', 'borderDashOffset', 'backgroundColor', 'borderColor', 'shadowColor', 'shadowBlur', 'shadowOffsetX', 'shadowOffsetY'];
 
 function setTokenTextStyle(textStyle, textStyleModel, globalTextStyle, opt, isNotNormal, isAttached, isBlock, inRich) {
@@ -16699,7 +16708,7 @@ time, template, isUTC, lang) {
   var monthAbbr = timeModel.get('monthAbbr');
   var dayOfWeek = timeModel.get('dayOfWeek');
   var dayOfWeekAbbr = timeModel.get('dayOfWeekAbbr');
-  return (template || '').replace(/{yyyy}/g, y + '').replace(/{yy}/g, y % 100 + '').replace(/{Q}/g, q + '').replace(/{MMMM}/g, month[M - 1]).replace(/{MMM}/g, monthAbbr[M - 1]).replace(/{MM}/g, pad(M, 2)).replace(/{M}/g, M + '').replace(/{dd}/g, pad(d, 2)).replace(/{d}/g, d + '').replace(/{eeee}/g, dayOfWeek[e]).replace(/{ee}/g, dayOfWeekAbbr[e]).replace(/{e}/g, e + '').replace(/{HH}/g, pad(H, 2)).replace(/{H}/g, H + '').replace(/{hh}/g, pad(h + '', 2)).replace(/{h}/g, h + '').replace(/{mm}/g, pad(m, 2)).replace(/{m}/g, m + '').replace(/{ss}/g, pad(s, 2)).replace(/{s}/g, s + '').replace(/{SSS}/g, pad(S, 3)).replace(/{S}/g, S + '');
+  return (template || '').replace(/{yyyy}/g, y + '').replace(/{yy}/g, pad(y % 100 + '', 2)).replace(/{Q}/g, q + '').replace(/{MMMM}/g, month[M - 1]).replace(/{MMM}/g, monthAbbr[M - 1]).replace(/{MM}/g, pad(M, 2)).replace(/{M}/g, M + '').replace(/{dd}/g, pad(d, 2)).replace(/{d}/g, d + '').replace(/{eeee}/g, dayOfWeek[e]).replace(/{ee}/g, dayOfWeekAbbr[e]).replace(/{e}/g, e + '').replace(/{HH}/g, pad(H, 2)).replace(/{H}/g, H + '').replace(/{hh}/g, pad(h + '', 2)).replace(/{h}/g, h + '').replace(/{mm}/g, pad(m, 2)).replace(/{m}/g, m + '').replace(/{ss}/g, pad(s, 2)).replace(/{s}/g, s + '').replace(/{SSS}/g, pad(S, 3)).replace(/{S}/g, S + '');
 }
 function leveledFormat(tick, idx, formatter, lang, isUTC) {
   var template = null;
@@ -28852,7 +28861,7 @@ function (_super) {
 
             if (ecData && ecData.dataIndex != null) {
               var dataModel = ecData.dataModel || ecModel.getSeriesByIndex(ecData.seriesIndex);
-              params = dataModel && dataModel.getDataParams(ecData.dataIndex, ecData.dataType) || {};
+              params = dataModel && dataModel.getDataParams(ecData.dataIndex, ecData.dataType, el) || {};
               return true;
             } // If element has custom eventData of components
             else if (ecData.eventData) {
@@ -38235,9 +38244,13 @@ function () {
       var itemModel = data.getItemModel(dataIndex);
       var defaultStyle = {};
       var visualStyle = data.getItemVisual(dataIndex, 'style');
-      var visualType = data.getVisual('drawType'); // Default to be same with main color
 
-      defaultStyle.stroke = visualStyle[visualType];
+      if (visualStyle) {
+        var visualType = data.getVisual('drawType'); // Default to be same with main color
+
+        defaultStyle.stroke = visualStyle[visualType];
+      }
+
       var labelLineModel = itemModel.getModel('labelLine');
       setLabelLineStyle(el, getLabelLineStatesModels(itemModel), defaultStyle);
       updateLabelLinePoints(el, labelLineModel);
@@ -48799,6 +48812,7 @@ function collect(ecModel, api) {
      *      coordSys,
      *      axisPointerModel,
      *      triggerTooltip,
+     *      triggerEmphasis,
      *      involveSeries,
      *      snap,
      *      seriesModels,
@@ -48878,6 +48892,7 @@ function collectAxesInfo(result, ecModel, api) {
 
       axisPointerModel = fromTooltip ? makeAxisPointerModel(axis, baseTooltipModel, globalAxisPointerModel, ecModel, fromTooltip, triggerTooltip) : axisPointerModel;
       var snap = axisPointerModel.get('snap');
+      var triggerEmphasis = axisPointerModel.get('triggerEmphasis');
       var axisKey = makeKey(axis.model);
       var involveSeries = triggerTooltip || snap || axis.type === 'category'; // If result.axesInfo[key] exist, override it (tooltip has higher priority).
 
@@ -48887,6 +48902,7 @@ function collectAxesInfo(result, ecModel, api) {
         coordSys: coordSys,
         axisPointerModel: axisPointerModel,
         triggerTooltip: triggerTooltip,
+        triggerEmphasis: triggerEmphasis,
         involveSeries: involveSeries,
         snap: snap,
         useHandle: isHandleTrigger(axisPointerModel),
@@ -60190,6 +60206,22 @@ var SYMBOL_CATEGORIES = ['fromSymbol', 'toSymbol'];
 function makeSymbolTypeKey(symbolCategory) {
   return '_' + symbolCategory + 'Type';
 }
+
+function makeSymbolTypeValue(name, lineData, idx) {
+  var symbolType = lineData.getItemVisual(idx, name);
+
+  if (!symbolType || symbolType === 'none') {
+    return symbolType;
+  }
+
+  var symbolSize = lineData.getItemVisual(idx, name + 'Size');
+  var symbolRotate = lineData.getItemVisual(idx, name + 'Rotate');
+  var symbolOffset = lineData.getItemVisual(idx, name + 'Offset');
+  var symbolKeepAspect = lineData.getItemVisual(idx, name + 'KeepAspect');
+  var symbolSizeArr = normalizeSymbolSize(symbolSize);
+  var symbolOffsetArr = normalizeSymbolOffset(symbolOffset || 0, symbolSizeArr);
+  return symbolType + symbolSizeArr + symbolOffsetArr + (symbolRotate || '') + (symbolKeepAspect || '');
+}
 /**
  * @inner
  */
@@ -60270,7 +60302,7 @@ function (_super) {
       // Or symbol position and rotation update in line#beforeUpdate will be one frame slow
 
       this.add(symbol);
-      this[makeSymbolTypeKey(symbolCategory)] = lineData.getItemVisual(idx, symbolCategory);
+      this[makeSymbolTypeKey(symbolCategory)] = makeSymbolTypeValue(symbolCategory, lineData, idx);
     }, this);
 
     this._updateCommonStl(lineData, idx, seriesScope);
@@ -60287,7 +60319,7 @@ function (_super) {
     setLinePoints(target.shape, linePoints);
     updateProps(line, target, seriesModel, idx);
     each(SYMBOL_CATEGORIES, function (symbolCategory) {
-      var symbolType = lineData.getItemVisual(idx, symbolCategory);
+      var symbolType = makeSymbolTypeValue(symbolCategory, lineData, idx);
       var key = makeSymbolTypeKey(symbolCategory); // Symbol changed
 
       if (this[key] !== symbolType) {
@@ -61476,6 +61508,85 @@ function () {
     return dataIndices;
   };
 
+  GraphNode.prototype.getTrajectoryDataIndices = function () {
+    var connectedEdgesMap = createHashMap();
+    var connectedNodesMap = createHashMap();
+    var data = this.hostGraph.data;
+
+    var getColor = function (index) {
+      var rawData = data.getRawDataItem(index);
+      return rawData.itemStyle.color;
+    };
+
+    var currentNodeColor = getColor(this.dataIndex);
+
+    for (var i = 0; i < this.edges.length; i++) {
+      var adjacentEdge = this.edges[i];
+
+      if (adjacentEdge.dataIndex < 0) {
+        continue;
+      }
+
+      var node1Color = getColor(adjacentEdge.node1.dataIndex);
+      var node2Color = getColor(adjacentEdge.node2.dataIndex);
+
+      if (node1Color === currentNodeColor || node2Color === currentNodeColor) {
+        connectedEdgesMap.set(adjacentEdge.dataIndex, true);
+      }
+
+      var sourceNodesQueue = [adjacentEdge.node1];
+      var targetNodesQueue = [adjacentEdge.node2];
+      var nodeIteratorIndex = 0;
+
+      while (nodeIteratorIndex < sourceNodesQueue.length) {
+        var sourceNode = sourceNodesQueue[nodeIteratorIndex];
+        nodeIteratorIndex++;
+
+        if (getColor(sourceNode.dataIndex) === currentNodeColor) {
+          connectedNodesMap.set(sourceNode.dataIndex, true);
+        }
+
+        for (var j = 0; j < sourceNode.inEdges.length; j++) {
+          var node1Color_1 = getColor(sourceNode.inEdges[j].node1.dataIndex);
+          var node2Color_1 = getColor(sourceNode.inEdges[j].node2.dataIndex);
+
+          if (node1Color_1 === currentNodeColor || node2Color_1 === currentNodeColor) {
+            connectedEdgesMap.set(sourceNode.inEdges[j].dataIndex, true);
+          }
+
+          sourceNodesQueue.push(sourceNode.inEdges[j].node1);
+        }
+      }
+
+      nodeIteratorIndex = 0;
+
+      while (nodeIteratorIndex < targetNodesQueue.length) {
+        var targetNode = targetNodesQueue[nodeIteratorIndex];
+        nodeIteratorIndex++;
+
+        if (getColor(targetNode.dataIndex) === currentNodeColor) {
+          connectedNodesMap.set(targetNode.dataIndex, true);
+        }
+
+        for (var j = 0; j < targetNode.outEdges.length; j++) {
+          var node1Color_2 = getColor(targetNode.outEdges[j].node1.dataIndex);
+          var node2Color_2 = getColor(targetNode.outEdges[j].node2.dataIndex);
+
+          if (node1Color_2 === currentNodeColor || node2Color_2 === currentNodeColor) {
+            connectedEdgesMap.set(targetNode.outEdges[j].dataIndex, true);
+          }
+
+          targetNodesQueue.push(targetNode.outEdges[j].node2);
+        }
+      }
+    }
+
+    return {
+      edge: connectedEdgesMap.keys(),
+      node: connectedNodesMap.keys()
+    };
+  };
+
   return GraphNode;
 }();
 
@@ -61504,6 +61615,76 @@ function () {
     return {
       edge: [this.dataIndex],
       node: [this.node1.dataIndex, this.node2.dataIndex]
+    };
+  };
+
+  GraphEdge.prototype.getTrajectoryDataIndices = function () {
+    var connectedEdgesMap = createHashMap();
+    var connectedNodesMap = createHashMap();
+    var data = this.hostGraph.data;
+
+    var getColor = function (index) {
+      var rawData = data.getRawDataItem(index);
+      return rawData.itemStyle.color;
+    };
+
+    var currentLinkColor = getColor(this.node1.dataIndex);
+    var node1Color = getColor(this.node1.dataIndex);
+    var node2Color = getColor(this.node2.dataIndex);
+
+    if (node1Color === currentLinkColor || node2Color === currentLinkColor) {
+      connectedEdgesMap.set(this.dataIndex, true);
+    }
+
+    var sourceNodes = [this.node1];
+    var targetNodes = [this.node2];
+    var nodeIteratorIndex = 0;
+
+    while (nodeIteratorIndex < sourceNodes.length) {
+      var sourceNode = sourceNodes[nodeIteratorIndex];
+      nodeIteratorIndex++;
+
+      if (getColor(sourceNode.dataIndex) === currentLinkColor) {
+        connectedNodesMap.set(sourceNode.dataIndex, true);
+      }
+
+      for (var j = 0; j < sourceNode.inEdges.length; j++) {
+        var node1Color_3 = getColor(sourceNode.inEdges[j].node1.dataIndex);
+        var node2Color_3 = getColor(sourceNode.inEdges[j].node2.dataIndex);
+
+        if (node1Color_3 === currentLinkColor || node2Color_3 === currentLinkColor) {
+          connectedEdgesMap.set(sourceNode.inEdges[j].dataIndex, true);
+        }
+
+        sourceNodes.push(sourceNode.inEdges[j].node1);
+      }
+    }
+
+    nodeIteratorIndex = 0;
+
+    while (nodeIteratorIndex < targetNodes.length) {
+      var targetNode = targetNodes[nodeIteratorIndex];
+      nodeIteratorIndex++;
+
+      if (getColor(targetNode.dataIndex) === currentLinkColor) {
+        connectedNodesMap.set(targetNode.dataIndex, true);
+      }
+
+      for (var j = 0; j < targetNode.outEdges.length; j++) {
+        var node1Color_4 = getColor(targetNode.outEdges[j].node1.dataIndex);
+        var node2Color_4 = getColor(targetNode.outEdges[j].node2.dataIndex);
+
+        if (node1Color_4 === currentLinkColor || node2Color_4 === currentLinkColor) {
+          connectedEdgesMap.set(targetNode.outEdges[j].dataIndex, true);
+        }
+
+        targetNodes.push(targetNode.outEdges[j].node2);
+      }
+    }
+
+    return {
+      edge: connectedEdgesMap.keys(),
+      node: connectedNodesMap.keys()
     };
   };
 
@@ -65832,7 +66013,7 @@ function (_super) {
       group.add(curve);
       edgeData.setItemGraphicEl(edge.dataIndex, curve);
       var focus = emphasisModel.get('focus');
-      toggleHoverEmphasis(curve, focus === 'adjacency' ? edge.getAdjacentDataIndices() : focus, emphasisModel.get('blurScope'), emphasisModel.get('disabled'));
+      toggleHoverEmphasis(curve, focus === 'adjacency' ? edge.getAdjacentDataIndices() : focus === 'trajectory' ? edge.getTrajectoryDataIndices() : focus, emphasisModel.get('blurScope'), emphasisModel.get('disabled'));
       getECData(curve).dataType = 'edge';
     }); // Generate a rect for each node
 
@@ -65855,6 +66036,7 @@ function (_super) {
       setLabelStyle(rect, getLabelStatesModels(itemModel), {
         labelFetcher: seriesModel,
         labelDataIndex: node.dataIndex,
+        labelValue: layout.value,
         defaultText: node.id
       });
       rect.disableLabelAnimation = true;
@@ -65865,7 +66047,7 @@ function (_super) {
       nodeData.setItemGraphicEl(node.dataIndex, rect);
       getECData(rect).dataType = 'node';
       var focus = emphasisModel.get('focus');
-      toggleHoverEmphasis(rect, focus === 'adjacency' ? node.getAdjacentDataIndices() : focus, emphasisModel.get('blurScope'), emphasisModel.get('disabled'));
+      toggleHoverEmphasis(rect, focus === 'adjacency' ? node.getAdjacentDataIndices() : focus === 'trajectory' ? node.getTrajectoryDataIndices() : focus, emphasisModel.get('blurScope'), emphasisModel.get('disabled'));
     });
     nodeData.eachItemGraphicEl(function (el, dataIndex) {
       var itemModel = nodeData.getItemModel(dataIndex);
@@ -75010,6 +75192,7 @@ function (_super) {
     // see `modelHelper`.
     snap: false,
     triggerTooltip: true,
+    triggerEmphasis: true,
     value: null,
     status: null,
     link: [],
@@ -75579,7 +75762,7 @@ function dispatchHighDownActually(axesInfo, dispatchAction, api) {
 
   each(axesInfo, function (axisInfo, key) {
     var option = axisInfo.axisPointerModel.option;
-    option.status === 'show' && each(option.seriesDataIndices, function (batchItem) {
+    option.status === 'show' && axisInfo.triggerEmphasis && each(option.seriesDataIndices, function (batchItem) {
       var key = batchItem.seriesIndex + ' | ' + batchItem.dataIndex;
       newHighlights[key] = batchItem;
     });
@@ -88033,15 +88216,17 @@ function (_super) {
       content = formatter(name);
     }
 
-    var inactiveColor = legendItemModel.get('inactiveColor');
+    var textColor = isSelected ? textStyleModel.getTextColor() : legendItemModel.get('inactiveColor');
     itemGroup.add(new ZRText({
       style: createTextStyle(textStyleModel, {
         text: content,
         x: textX,
         y: itemHeight / 2,
-        fill: isSelected ? textStyleModel.getTextColor() : inactiveColor,
+        fill: textColor,
         align: textAlign,
         verticalAlign: 'middle'
+      }, {
+        inheritColor: textColor
       })
     })); // Add a invisible rect to increase the area of mouse hover
 
@@ -95542,7 +95727,7 @@ use(install$v); // `parallel` coordinate system, only work for parallel series, 
 // });
 
 use(install$g); // `calendar` coordinate system. for example,
-// chart.setOptionp({
+// chart.setOption({
 //     calendar: {...},
 //     series: [{
 //         coordinateSystem: 'calendar'
@@ -95618,7 +95803,7 @@ use(install$G); // `legend` component not scrollable. for example:
 use(install$J); // `dataZoom` component including both `dataZoomInside` and `dataZoomSlider`.
 
 use(install$M); // `dataZoom` component providing drag, pinch, wheel behaviors
-// inside coodinate system, for example:
+// inside coordinate system, for example:
 // chart.setOption({
 //     dataZoom: {type: 'inside'}
 // });
