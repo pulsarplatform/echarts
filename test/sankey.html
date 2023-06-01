@@ -38,6 +38,7 @@ under the License.
         <div id="main0"></div>
         <div id="main1"></div>
         <div id="main2"></div>
+        <div id="main3"></div>
 
 
 
@@ -175,6 +176,137 @@ under the License.
                     };
                     chart.on('click', function (params) {
                        console.log(params, params.data);
+                    });
+                }
+            });
+        </script>
+
+        <script>
+            require([
+                'echarts'
+            ], function (echarts) {
+                var testData =  {
+                    nodes: [
+                        {
+                            name: 'a',
+                            itemStyle: {
+                              color: 'blue'
+                            },
+                        },
+                        {
+                            name: 'b',
+                            itemStyle: {
+                              color: 'red'
+                            },
+                        },
+                        {
+                            name: 'c',
+                            itemStyle: {
+                              color: 'green'
+                            },
+                        },
+                        {
+                            name: 'd',
+                            itemStyle: {
+                              color: 'blue'
+                            },
+                        },
+                        {
+                            name: 'e',
+                            itemStyle: {
+                              color: 'blue'
+                            },
+                        },
+                        {
+                            name: 'f',
+                            itemStyle: {
+                              color: 'red'
+                            },
+                        },
+                        {
+                            name: 'g',
+                            itemStyle: {
+                              color: 'red'
+                            },
+                        }
+                    ],
+                    links: [
+                        {
+                            source: 'a',
+                            target: 'c',
+                            value: 5
+                        },
+                        {
+                            source: 'a',
+                            target: 'd',
+                            value: 3
+                        },
+                        {
+                            source: 'b',
+                            target: 'c',
+                            value: 2
+                        },
+                        {
+                            source: 'b',
+                            target: 'd',
+                            value: 2
+                        },
+                        {
+                            source: 'c',
+                            target: 'f',
+                            value: 2
+                        },
+                        {
+                            source: 'd',
+                            target: 'e',
+                            value: 1
+                        },
+                        {
+                            source: 'd',
+                            target: 'f',
+                            value: 3
+                        },
+                        {
+                            source: 'e',
+                            target: 'g',
+                            value: 3
+                        },
+                        {
+                            source: 'f',
+                            target: 'g',
+                            value: 3
+                        }
+                    ]
+                };
+
+                var option = {
+                    series: [
+                        {
+                            type: 'sankey',
+                            nodes: testData.nodes,
+                            links: testData.links,
+                            lineStyle: {
+                                color: 'gradient',
+                                curveness: 0.5
+                            },
+                            emphasis: {
+                                focus: 'trajectoryColor'
+                            }
+                        }
+                    ]
+                }
+
+                var chart = testHelper.create(echarts, 'main3', {
+                    title: 'emphasis trajectoryColor',
+                    option: option
+                });
+
+                if (chart) {
+                    window.onresize = function () {
+                        chart.resize();
+                    };
+                    chart.on('click', function (params) {
+                        console.log(params, params.data);
                     });
                 }
             });

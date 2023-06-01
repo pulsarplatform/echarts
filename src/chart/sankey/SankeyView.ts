@@ -243,6 +243,7 @@ class SankeyView extends ChartView {
                 curve,
                 focus === 'adjacency' ? edge.getAdjacentDataIndices()
                 : focus === 'trajectory' ? edge.getTrajectoryDataIndices()
+                : focus === 'trajectoryColor' ? edge.getTrajectoryColorDataIndices()
                 : focus,
                 emphasisModel.get('blurScope'),
                 emphasisModel.get('disabled')
@@ -300,6 +301,8 @@ class SankeyView extends ChartView {
                     ? node.getAdjacentDataIndices()
                     : focus === 'trajectory'
                     ? node.getTrajectoryDataIndices()
+                    : focus === 'trajectoryColor'
+                    ? node.getTrajectoryColorDataIndices()
                     : focus,
                 emphasisModel.get('blurScope'),
                 emphasisModel.get('disabled')
