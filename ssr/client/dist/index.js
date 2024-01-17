@@ -48,26 +48,20 @@
   */
   function hydrate(dom, options) {
     var svgRoot = dom.querySelector('svg');
-
     if (!svgRoot) {
       console.error('No SVG element found in the DOM.');
       return;
     }
-
     var children = svgRoot.children;
-
     function getIndex(child, attr) {
       var index = child.getAttribute(attr);
-
       if (index) {
         return parseInt(index, 10);
       } else {
         return null;
       }
     }
-
     var events = options.on;
-
     if (events) {
       var _loop_1 = function (eventName) {
         if (typeof events[eventName] === 'function') {
@@ -75,7 +69,6 @@
             var child = children[i];
             var type = child.getAttribute('ecmeta_ssr_type');
             var silent = child.getAttribute('ecmeta_silent') === 'true';
-
             if (type && !silent) {
               child.addEventListener(eventName, function (e) {
                 events[eventName]({
@@ -88,13 +81,11 @@
               });
             }
           };
-
           for (var i = 0; i < children.length; i++) {
             _loop_2(i);
           }
         }
       };
-
       for (var eventName in events) {
         _loop_1(eventName);
       }
