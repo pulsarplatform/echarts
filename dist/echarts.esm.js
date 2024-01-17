@@ -55612,8 +55612,9 @@ var GraphNode = /** @class */function () {
     var connectedNodesMap = createHashMap();
     var data = this.hostGraph.data;
     var getColor = function (index) {
+      var _a;
       var rawData = data.getRawDataItem(index);
-      return rawData.itemStyle.color;
+      return (_a = rawData === null || rawData === void 0 ? void 0 : rawData.itemStyle) === null || _a === void 0 ? void 0 : _a.color;
     };
     var currentNodeColor = getColor(this.dataIndex);
     for (var i = 0; i < this.edges.length; i++) {
@@ -55695,8 +55696,9 @@ var GraphEdge = /** @class */function () {
     var connectedNodesMap = createHashMap();
     var data = this.hostGraph.data;
     var getColor = function (index) {
+      var _a;
       var rawData = data.getRawDataItem(index);
-      return rawData.itemStyle.color;
+      return (_a = rawData === null || rawData === void 0 ? void 0 : rawData.itemStyle) === null || _a === void 0 ? void 0 : _a.color;
     };
     var currentLinkColor = getColor(this.node1.dataIndex);
     var node1Color = getColor(this.node1.dataIndex);
