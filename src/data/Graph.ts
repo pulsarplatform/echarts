@@ -394,7 +394,7 @@ class GraphNode {
         const data = this.hostGraph.data;
         const getColor = (index: number) => {
             const rawData: any = data.getRawDataItem(index);
-            return rawData.itemStyle.color;
+            return rawData?.itemStyle?.color;
         };
         const currentNodeColor = getColor(this.dataIndex);
 
@@ -503,7 +503,7 @@ class GraphEdge {
         const data = this.hostGraph.data;
         const getColor = (index: number) => {
             const rawData: any = data.getRawDataItem(index);
-            return rawData.itemStyle.color;
+            return rawData?.itemStyle?.color;
         };
         const currentLinkColor = getColor(this.node1.dataIndex);
 
