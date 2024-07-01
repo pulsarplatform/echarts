@@ -128,13 +128,16 @@ const getRangeHandlers: {
                 if (xSpanHalf > centerPoint && xSpanHalf > 100 - centerPoint) {
                     range[0] = 0;
                     range[1] = 100;
-                } else if (xSpanHalf > centerPoint) {
+                }
+                else if (xSpanHalf > centerPoint) {
                     range[0] = 0;
                     range[1] = Math.min(100, xSpan);
-                } else if (xSpanHalf > 100 - centerPoint) {
+                }
+                else if (xSpanHalf > 100 - centerPoint) {
                     range[0] = Math.max(0, 100 - xSpan);
                     range[1] = 100;
-                } else {
+                }
+                else {
                     range[0] = centerPoint - xSpanHalf;
                     range[1] = centerPoint + xSpanHalf;
                 }
