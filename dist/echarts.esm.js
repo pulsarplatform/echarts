@@ -79966,6 +79966,7 @@ var InsideZoomView = /** @class */function (_super) {
 }(DataZoomView);
 var getRangeHandlers = {
   zoom: function (coordSysInfo, coordSysMainType, controller, e) {
+    var _a;
     var lastRange = this.range;
     var range = lastRange.slice();
     // Calculate transform by the first axis.
@@ -79978,8 +79979,35 @@ var getRangeHandlers = {
     var scale = Math.max(1 / e.scale, 0);
     range[0] = (range[0] - percentPoint) * scale + percentPoint;
     range[1] = (range[1] - percentPoint) * scale + percentPoint;
+    // Correlate zoom ratio if there are more than one axis. It is to prevent zooming disproportion
+    if ((_a = e.context.batch) === null || _a === void 0 ? void 0 : _a.length) {
+      var x = e.context.batch[0];
+      var xSpan = x.end - x.start;
+      if (Math.round(range[1] - range[0]) !== Math.round(xSpan)) {
+        // Disproportion happens and needs to be fixed
+        var centerPoint = (range[1] - range[0]) / 2;
+        var xSpanHalf = xSpan / 2;
+        if (xSpanHalf > centerPoint && xSpanHalf > 100 - centerPoint) {
+          range[0] = 0;
+          range[1] = 100;
+        } else if (xSpanHalf > centerPoint) {
+          range[0] = 0;
+          range[1] = Math.min(100, xSpan);
+        } else if (xSpanHalf > 100 - centerPoint) {
+          range[0] = Math.max(0, 100 - xSpan);
+          range[1] = 100;
+        } else {
+          range[0] = centerPoint - xSpanHalf;
+          range[1] = centerPoint + xSpanHalf;
+        }
+      }
+    }
     // Restrict range.
     var minMaxSpan = this.dataZoomModel.findRepresentativeAxisProxy().getMinMaxSpan();
+    // Stop moving when reaching max or min span
+    if (minMaxSpan.minSpan >= range[1] - range[0] || minMaxSpan.maxSpan <= range[1] - range[0]) {
+      return;
+    }
     sliderMove(0, range, [0, 100], 0, minMaxSpan.minSpan, minMaxSpan.maxSpan);
     this.range = range;
     if (lastRange[0] !== range[0] || lastRange[1] !== range[1]) {
@@ -83162,6 +83190,7 @@ function ariaVisual(ecModel, api) {
     if (!labelModel.get('enabled')) {
       return;
     }
+    dom.setAttribute('role', 'img');
     if (labelModel.get('description')) {
       dom.setAttribute('aria-label', labelModel.get('description'));
       return;

@@ -41170,6 +41170,7 @@
         if (!labelModel.get('enabled')) {
           return;
         }
+        dom.setAttribute('role', 'img');
         if (labelModel.get('description')) {
           dom.setAttribute('aria-label', labelModel.get('description'));
           return;
