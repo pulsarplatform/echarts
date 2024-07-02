@@ -183,30 +183,30 @@ todo
 
 # Distribution files
 /esm
-/echarts.all.js
-/echarts.simple.js
-/echarts.common.js
-/echarts.blank.js
-/lib
-/types
-/index.js
-/index.simple.js
-/index.common.js
-/index.blank.js
-/extension-esm
-/extension
-/ssr/client/lib
-/ssr/client/types
-/ssr/client/index.js
-/ssr/client/index.d.ts
-/core.js
-/core.d.ts
-/charts.js
-/charts.d.ts
-/components.js
-/components.d.ts
-/renderers.js
-/renderers.d.ts
-/features.js
-/features.d.ts
+# /echarts.all.js
+# /echarts.simple.js
+# /echarts.common.js
+# /echarts.blank.js
+# /lib
+# /types
+# /index.js
+# /index.simple.js
+# /index.common.js
+# /index.blank.js
+# /extension-esm
+# /extension
+# /ssr/client/lib
+# /ssr/client/types
+# /ssr/client/index.js
+# /ssr/client/index.d.ts
+# /core.js
+# /core.d.ts
+# /charts.js
+# /charts.d.ts
+# /components.js
+# /components.d.ts
+# /renderers.js
+# /renderers.d.ts
+# /features.js
+# /features.d.ts
 *.tgz
