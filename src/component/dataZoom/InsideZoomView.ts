@@ -120,6 +120,11 @@ const getRangeHandlers: {
         // Restrict range.
         const minMaxSpan = this.dataZoomModel.findRepresentativeAxisProxy().getMinMaxSpan();
 
+        // Stop moving when reaching max or min span
+        if (minMaxSpan.minSpan >= range[1] - range[0] || minMaxSpan.maxSpan <= range[1] - range[0]) {
+            return;
+        }
+
         sliderMove(0, range, [0, 100], 0, minMaxSpan.minSpan, minMaxSpan.maxSpan);
 
         this.range = range;
